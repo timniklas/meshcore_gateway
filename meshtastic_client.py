@@ -49,7 +49,7 @@ class MeshtasticClient:
             print(f"[meshtastic] recv from {sender_name}: {message}")
 
             fut = asyncio.run_coroutine_threadsafe(
-                self.on_incoming_text(f"Meshtastic {sender_name}: {message}"),
+                self.on_incoming_text(f"Meshtastic {sender_name}:{message}"),
                 self.loop,
             )
             fut.add_done_callback(lambda f: f.exception() and print("meshtastic cb error:", f.exception()))
