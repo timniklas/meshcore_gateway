@@ -25,6 +25,17 @@ class MeshtasticClient:
         self.interface.sendText(message, wantAck=True)
         print(f"[meshtastic] Sent: {message}")
 
+    def _get_node_name(self, node_id):
+        """Versucht, den Knotennamen anhand der Node-ID zu ermitteln"""
+        if not self.interface or not hasattr(self.interface, "nodes"):
+            return str(node_id)
+
+        for node in self.interface.nodes.values():
+            if node.get("num") == node_id:
+                user = node.get("user", {})
+                return user.get("longName") or user.get("shortName") or str(node_id)
+        return str(node_id)
+
     def _handle_message_threaded_cb(self, packet, interface):
         try:
             if packet.get("toId") != "^all":
@@ -33,11 +44,12 @@ class MeshtasticClient:
             nodenum = packet.get("from")
             decoded = packet.get("decoded") or {}
             message = decoded.get("text", "")
-            sender_node_id = str(nodenum) if nodenum is not None else "unknown"
-            print(f"[meshtastic] recv from {sender_node_id}: {message}")
+            sender_name = self._get_node_name(nodenum)
+
+            print(f"[meshtastic] recv from {sender_name}: {message}")
 
             fut = asyncio.run_coroutine_threadsafe(
-                self.on_incoming_text(f"{sender_node_id}: {message}"),
+                self.on_incoming_text(f"Meshtastic {sender_name}: {message}"),
                 self.loop,
             )
             fut.add_done_callback(lambda f: f.exception() and print("meshtastic cb error:", f.exception()))
